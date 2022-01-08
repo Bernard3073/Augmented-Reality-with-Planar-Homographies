@@ -6,8 +6,8 @@ from helper import computeBrief
 from helper import corner_detection
 
 def matchPics(I1, I2):
-	ratio = 0.7
-	sigma = 0.15
+	ratio = 0.8
+	sigma = 0.18
 	#I1, I2 : Images to match
 	
 
