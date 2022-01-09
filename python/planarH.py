@@ -87,6 +87,11 @@ def computeH_ransac(locs1, locs2):
 	#Q3.8
 	#Compute the best fitting homography given a list of matching points
 	# https://stackoverflow.com/questions/61146241/how-to-stitch-two-images-using-homography-matrix-in-opencv
+	
+	# Swap columns in locs because they are in the form of [y, x] returned by matchPics
+	locs1 = np.fliplr(locs1)
+	locs2 = np.fliplr(locs2)
+	
 	N = np.inf
 	sample_count = 0
 	p = 0.99
