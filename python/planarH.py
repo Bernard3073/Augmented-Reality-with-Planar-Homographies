@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import copy
 
 # def order_points(pts):
 #     # Reference: https://www.pyimagesearch.com/2016/03/21/ordering-coordinates-clockwise-with-python-and-opencv/
@@ -49,8 +50,8 @@ def computeH_norm(x1, x2):
 	x2_norm = x2 - [x2_cent_x, x2_cent_y]
 
 	#Normalize the points so that the largest distance from the origin is equal to sqrt(2)
-	scaling_factor_1 = np.sqrt(2) / np.max(np.hypot(x1_norm))
-	scaling_factor_2 = np.sqrt(2) / np.max(np.hypot(x2_norm))
+	scaling_factor_1 = np.sqrt(2) / np.max([i[0]**2 + i[1]**2 for i in x1_norm])
+	scaling_factor_2 = np.sqrt(2) / np.max([i[0]**2 + i[1]**2 for i in x2_norm])
 	x1_norm = x1_norm * scaling_factor_1
 	x2_norm = x2_norm * scaling_factor_2
 
@@ -75,15 +76,48 @@ def computeH_norm(x1, x2):
 	return H2to1
 
 
+def generateRandom(src_Pts, dest_Pts):
+    r = np.random.choice(len(src_Pts), 4)
+    src = [src_Pts[i] for i in r]
+    dest = [dest_Pts[i] for i in r]
+    return np.asarray(src, dtype=np.float32), np.asarray(dest, dtype=np.float32)
 
 
 def computeH_ransac(locs1, locs2):
 	#Q3.8
 	#Compute the best fitting homography given a list of matching points
+	# https://stackoverflow.com/questions/61146241/how-to-stitch-two-images-using-homography-matrix-in-opencv
+	N = np.inf
+	sample_count = 0
+	p = 0.99
+	threshold = 10
+	max_num_inliers = 0
+	while N > sample_count:
+		random_pts_1, random_pts_2 = generateRandom(locs1, locs2)
+		H2to1 = computeH_norm(random_pts_1, random_pts_2)
+		inlier_count = 0
+		inliers = []
+		for p1, p2 in zip(locs1, locs2):
+			p2_homo = (np.append(p2, 1)).reshape(3, 1)
+			p1_est = H2to1 @ p2_homo
+			p1_est = (p1_est/p1_est[2])[:2].reshape(1, 2)[0]
+			if cv2.norm(p1 - p1_est) <= threshold:
+				inlier_count += 1
+				inliers.append(1)
+			else:
+				inliers.append(0)
+		if inlier_count > max_num_inliers:
+			max_num_inliers = inlier_count
+			bestH2to1 = H2to1
+			inliers.append(p1)
 
+		inlier_ratio = inlier_count / len(locs2)
+		if np.log(1 - (inlier_ratio**8)) == 0:
+			continue
+		N = np.log(1-p) / np.log(1 - (inlier_ratio**8))
+		sample_count += 1
 
-
-	return bestH2to1, inliers
+	return bestH2to1, np.array(inliers)
 
 
 
@@ -95,16 +129,16 @@ def compositeH(H2to1, template, img):
 	#Note that the homography we compute is from the image to the template;
 	#x_template = H2to1*x_photo
 	#For warping the template to the image, we need to invert it.
-	
+	H2to1_inv = np.linalg.pinv(H2to1)
 
 	#Create mask of same size as template
-
+	mask = np.ones(template.shape)
 	#Warp mask by appropriate homography
-
+	mask_warp = cv2.warpPerspective(mask, H2to1_inv, (img.shape[1], img.shape[0]))
 	#Warp template by appropriate homography
-
+	template_warp = cv2.warpPerspective(template, H2to1_inv, (img.shape[1], img.shape[0]))
 	#Use mask to combine the warped template and the image
-	
+	composite_img = template_warp + img * np.logical_not(mask_warp)
 	return composite_img
 
 
