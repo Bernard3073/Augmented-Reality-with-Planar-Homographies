@@ -105,7 +105,7 @@ def computeH_ransac(locs1, locs2):
 		for p1, p2 in zip(locs1, locs2):
 			p2_homo = (np.append(p2, 1)).reshape(3, 1)
 			p1_est = H2to1 @ p2_homo
-			p1_est = (p1_est/p1_est[2])[:2].reshape(1, 2)[0]
+			p1_est = (p1_est/p1_est[2])[:2].reshape(1, 2)
 			if cv2.norm(p1 - p1_est) <= threshold:
 				inlier_count += 1
 				inliers.append(1)
