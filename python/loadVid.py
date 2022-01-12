@@ -18,6 +18,7 @@ def loadVid(path):
 		ret, frame = cap.read()
 		if ret == True:
 
+			cv2.imshow('f', frame)
 			#Store the resulting frame
 			if i == 1:
 				frames = frame[np.newaxis, ...]
@@ -25,11 +26,12 @@ def loadVid(path):
 				frame = frame[np.newaxis, ...]
 				frames = np.vstack([frames, frame])
 				frames = np.squeeze(frames)
-			
+			if cv2.waitKey(25) & 0xFF == ord('q'):
+				break
 		else: 
 			break
 	 
 	# When everything done, release the video capture object
 	cap.release()
-
+	cv2.destroyAllWindows() 
 	return frames

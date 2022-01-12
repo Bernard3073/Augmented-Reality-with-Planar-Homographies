@@ -122,7 +122,7 @@ def computeH_ransac(locs1, locs2):
 		N = np.log(1-p) / np.log(1 - (inlier_ratio**8))
 		sample_count += 1
 
-	return bestH2to1, np.array(inliers)
+	return bestH2to1, inliers
 
 
 
