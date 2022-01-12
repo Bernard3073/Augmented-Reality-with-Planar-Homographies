@@ -31,15 +31,7 @@ def detect_feature(img1, img2):
     # find the keypoints and descriptors
     kp1, des1 = orb.detectAndCompute(img1, None)
     kp2, des2 = orb.detectAndCompute(img2, None)
-    # # FLANN parameters
-    # FLANN_INDEX_KDTREE = 0
-    # index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-    # search_params = dict(checks=50)  # or pass empty dictionary
-
-    # flann = cv2.FlannBasedMatcher(index_params, search_params)
-    # des1 = np.float32(des1)
-    # des2 = np.float32(des2)
-    # matches = flann.knnMatch(des1, des2, k=2)
+    # FLANN parameters
     FLANN_INDEX_LSH = 6
     index_params= dict(algorithm = FLANN_INDEX_LSH,
                     table_number = 6, 
@@ -115,26 +107,27 @@ def main():
 
         # for i, match in enumerate(good):
         for match in good:
-            feature_1.append([*kp1[match.queryIdx].pt])
-            feature_2.append([*kp2[match.trainIdx].pt])
+            feature_1.append([kp1[match.queryIdx].pt])
+            feature_2.append([kp2[match.trainIdx].pt])
         feature_1 = np.array(feature_1)
         feature_2 = np.array(feature_2)
-        H, _ = cv2.findHomography(feature_1, feature_2, cv2.FM_RANSAC)
-        # locs1 = np.array([[*kp1[m.queryIdx].pt] for m in good])
-        # locs2 = np.array([[*kp2[m.trainIdx].pt] for m in good])
-        # H, _ = cv2.findHomography(locs1, locs2, cv2.RANSAC, 0.7)
-        # print(H)
-        template = cv2.resize(ar_source_crop[i], (cv_cover.shape[1], cv_cover.shape[0]))
-        #Create mask of same size as template
-        mask = np.ones(template.shape)
-        #Warp mask by appropriate homography
-        mask_warp = cv2.warpPerspective(mask, H, (cv_book.shape[1], cv_book.shape[0]))
-        #Warp template by appropriate homography
-        template_warp = cv2.warpPerspective(template, H, (cv_book.shape[1], cv_book.shape[0]))
-        #Use mask to combine the warped template and the image
-        composite_img = template_warp + cv_book * np.logical_not(mask_warp)
-        cv2.imshow('c', composite_img)
-        cv2.waitKey(1)
+        if len(good) >= 4:
+            H, _ = cv2.findHomography(feature_1, feature_2, cv2.FM_RANSAC)
+            # locs1 = np.array([[*kp1[m.queryIdx].pt] for m in good])
+            # locs2 = np.array([[*kp2[m.trainIdx].pt] for m in good])
+            # H, _ = cv2.findHomography(locs1, locs2, cv2.RANSAC, 0.7)
+            # print(H)
+            template = cv2.resize(ar_source_crop[i], (cv_cover.shape[1], cv_cover.shape[0]))
+            #Create mask of same size as template
+            mask = np.ones(template.shape)
+            #Warp mask by appropriate homography
+            mask_warp = cv2.warpPerspective(mask, H, (cv_book.shape[1], cv_book.shape[0]))
+            #Warp template by appropriate homography
+            template_warp = cv2.warpPerspective(template, H, (cv_book.shape[1], cv_book.shape[0]))
+            #Use mask to combine the warped template and the image
+            composite_img = template_warp + cv_book * np.logical_not(mask_warp)
+            cv2.imshow('c', composite_img)
+            cv2.waitKey(1)
 
     cv2.destroyAllWindows()
 if __name__ == '__main__':
